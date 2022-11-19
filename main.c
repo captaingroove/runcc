@@ -5,6 +5,16 @@
 #include <qlibc/qlibc.h>
 #include <qlibc/utilities/qfile.h>
 
+#define FILE_NAME_MAX    256
+#define BUILD_PATH_MAX    64
+#define CMD_MAX         1024
+
+static char script_path[FILE_NAME_MAX + BUILD_PATH_MAX];
+static char    exe_path[FILE_NAME_MAX + BUILD_PATH_MAX];
+static char    comp_cmd[CMD_MAX];
+static char     run_cmd[CMD_MAX];
+
+
 int
 main(int argc, char *argv[])
 {
@@ -21,7 +31,6 @@ main(int argc, char *argv[])
 		script_start++;
 	}
 	// Script source and exe file names
-	char script_path[256], exe_path[256];
 	char *script_name = qfile_get_name(argv[1]);
 	char *build_dir = "/tmp";
 	sprintf(script_path, "%s/%s", build_dir, script_name);
@@ -29,7 +38,6 @@ main(int argc, char *argv[])
 	exe_path[strlen(exe_path) - 2] = '\0';
 	// Save script to file after processing, compile, and run
 	qfile_save(script_path, script_start, bytes - (script_start - script), false);
-	char comp_cmd[1024], run_cmd[1024];
 	sprintf(comp_cmd, "gcc %s -o %s", script_path, exe_path);
 	system(comp_cmd);
 	sprintf(run_cmd, "%s", exe_path);
