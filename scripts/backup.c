@@ -1,4 +1,4 @@
-//#!/home/jorg/cc/runcc/build/runcc
+#!/home/jorg/cc/runcc/build/runcc
 #include <stdio.h>
 #include <stdlib.h>
 
