@@ -6,6 +6,8 @@
 #include <qlibc/qlibc.h>
 #include <qlibc/utilities/qfile.h>
 
+/// We can make safe assumptions on the following string lengths,
+/// as this is either not no user input or these are OS limits
 #define FILE_NAME_MAX (256)
 #define BUILD_PATH_MAX (64)
 #define OUT_PATH_MAX (FILE_NAME_MAX + BUILD_PATH_MAX)
@@ -24,7 +26,7 @@ char *
 find_ccode_start(char *script_ptr, size_t script_size)
 {
 	char *ccode_start = script_ptr;
-	// Skip shebang line if exists
+	/// Skip shebang line if exists
 	if (script_ptr[0] == '#' && script_ptr[1] == '!') {
 		ccode_start = strchr(script_ptr, '\n');
 		ccode_start++;
