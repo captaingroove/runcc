@@ -36,6 +36,7 @@ find_ccode_start(char *script_ptr, size_t script_size)
 bool
 create_build_dir(const char *build_base_dir, char *build_dir)
 {
+	/// FIXME use a unique temporary file name instead of user name if user name is not available
 	char *user_name = getenv("USER");
 	sprintf(build_dir, "%s/%s", build_base_dir, user_name);
 	if (!qfile_exist(build_dir) && !qfile_mkdir(build_dir, S_IRWXU, true)) {
