@@ -22,12 +22,12 @@ main(int argc, char *argv[])
 		printf("usage: %s script.c\n", argv[0]);
 		return EXIT_SUCCESS;
 	}
-	size_t bytes;
-	char *script = qfile_load(argv[1], &bytes);
+	size_t script_size;
+	char *script_ptr = qfile_load(argv[1], &script_size);
 	// Skip shebang line if exists
-	char *script_start = script;
-	if (script[0] == '#' && script[1] == '!') {
-		script_start = strchr(script, '\n');
+	char *script_start = script_ptr;
+	if (script_ptr[0] == '#' && script_ptr[1] == '!') {
+		script_start = strchr(script_ptr, '\n');
 		script_start++;
 	}
 	// Script source and exe file names
@@ -37,7 +37,7 @@ main(int argc, char *argv[])
 	sprintf(exe_path, "%s/%s", build_dir, script_name);
 	exe_path[strlen(exe_path) - 2] = '\0';
 	// Save script to file after processing, compile, and run
-	qfile_save(script_path, script_start, bytes - (script_start - script), false);
+	qfile_save(script_path, script_start, script_size - (script_start - script_ptr), false);
 	sprintf(comp_cmd, "gcc %s -o %s", script_path, exe_path);
 	system(comp_cmd);
 	sprintf(run_cmd, "%s", exe_path);

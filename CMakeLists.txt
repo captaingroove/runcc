@@ -12,3 +12,5 @@ target_link_libraries(runcc
 	qlibc
 	pthread
 )
+
+install(TARGETS runcc DESTINATION bin)
