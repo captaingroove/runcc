@@ -29,14 +29,20 @@ find_ccode_start(char *script_ptr, size_t script_size)
 }
 
 
-void
+bool
 get_paths(char *script_path, char *ccode_path, char *exe_path)
 {
 	char *script_name = qfile_get_name(script_path);
 	char *build_dir = "/tmp";
 	sprintf(ccode_path, "%s/%s", build_dir, script_name);
 	sprintf(exe_path, "%s/%s", build_dir, script_name);
-	exe_path[strlen(exe_path) - 2] = '\0';
+	char *dotpos = strrchr(script_name, '.');
+	if (!dotpos) {
+		fprintf(stderr, "script file name has no extension like '.c'\n");
+		return false;
+	}
+	exe_path[strlen(exe_path) - strlen(dotpos)] = '\0';
+	return true;
 }
 
 
@@ -48,12 +54,10 @@ write_ccode_compile_and_run(
 	char *exe_path)
 {
 	char comp_cmd[CMD_MAX];
-	char run_cmd[CMD_MAX];
 	qfile_save(ccode_path, ccode_start, ccode_size, false);
-	sprintf(comp_cmd, "gcc %s -o %s", ccode_path, exe_path);
+	sprintf(comp_cmd, "gcc -Wno-implicit-int %s -o %s", ccode_path, exe_path);
 	system(comp_cmd);
-	sprintf(run_cmd, "%s", exe_path);
-	system(run_cmd);
+	system(exe_path);
 }
 
 
