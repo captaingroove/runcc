@@ -20,6 +20,7 @@ size_t script_size = 0;
 char *script_ptr = NULL, *ccode_start = NULL;
 /// FIXME need to find a different build_dir if we want to cash the executables
 char *build_base_dir = "/tmp/runcc";
+char *comp_warnings = "-Wno-implicit-int";
 
 
 char *
@@ -69,11 +70,12 @@ write_ccode_compile_and_run(
 	char *ccode_start,
 	size_t ccode_size,
 	char *ccode_path,
-	char *exe_path)
+	char *exe_path,
+	char *comp_warnings)
 {
 	char comp_cmd[CMD_MAX];
 	qfile_save(ccode_path, ccode_start, ccode_size, false);
-	sprintf(comp_cmd, "gcc -Wno-implicit-int %s -o %s", ccode_path, exe_path);
+	sprintf(comp_cmd, "gcc %s %s -o %s", comp_warnings, ccode_path, exe_path);
 	system(comp_cmd);
 	system(exe_path);
 }
@@ -97,6 +99,7 @@ main(int argc, char *argv[])
 		ccode_start,
 		script_size - (ccode_start - script_ptr),
 		ccode_path,
-		exe_path);
+		exe_path,
+		comp_warnings);
 	return EXIT_SUCCESS;
 }
