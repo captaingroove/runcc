@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 #include <qlibc/qlibc.h>
 #include <qlibc/utilities/qfile.h>
 
@@ -14,6 +15,7 @@ static char ccode_path[OUT_PATH_MAX];
 static char exe_path[OUT_PATH_MAX];
 size_t script_size = 0;
 char *script_ptr = NULL, *ccode_start = NULL;
+char *build_dir = "/tmp/runcc";
 
 
 char *
@@ -30,10 +32,9 @@ find_ccode_start(char *script_ptr, size_t script_size)
 
 
 bool
-get_paths(char *script_path, char *ccode_path, char *exe_path)
+get_paths(const char *script_path, const char *build_dir, char *ccode_path, char *exe_path)
 {
 	char *script_name = qfile_get_name(script_path);
-	char *build_dir = "/tmp";
 	sprintf(ccode_path, "%s/%s", build_dir, script_name);
 	sprintf(exe_path, "%s/%s", build_dir, script_name);
 	char *dotpos = strrchr(script_name, '.');
@@ -68,9 +69,13 @@ main(int argc, char *argv[])
 		printf("usage: %s <script.c>\n", argv[0]);
 		return EXIT_SUCCESS;
 	}
+	if (!qfile_exist(build_dir) && !qfile_mkdir(build_dir, S_IRWXU, true)) {
+		fprintf(stderr, "could not create temporary build directory %s\n", build_dir);
+		return EXIT_FAILURE;
+	}
 	script_ptr = qfile_load(argv[1], &script_size);
 	ccode_start = find_ccode_start(script_ptr, script_size);
-	get_paths(argv[1], ccode_path, exe_path);
+	get_paths(argv[1], build_dir, ccode_path, exe_path);
 	write_ccode_compile_and_run(
 		ccode_start,
 		script_size - (ccode_start - script_ptr),
