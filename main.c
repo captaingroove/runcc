@@ -11,11 +11,13 @@
 #define OUT_PATH_MAX (FILE_NAME_MAX + BUILD_PATH_MAX)
 #define CMD_MAX (1024)
 
+static char build_dir[OUT_PATH_MAX];
 static char ccode_path[OUT_PATH_MAX];
 static char exe_path[OUT_PATH_MAX];
 size_t script_size = 0;
 char *script_ptr = NULL, *ccode_start = NULL;
-char *build_dir = "/tmp/runcc";
+/// FIXME need to find a different build_dir if we want to cash the executables
+char *build_base_dir = "/tmp/runcc";
 
 
 char *
@@ -28,6 +30,18 @@ find_ccode_start(char *script_ptr, size_t script_size)
 		ccode_start++;
 	}
 	return ccode_start;
+}
+
+
+bool
+create_build_dir(const char *build_base_dir, char *build_dir)
+{
+	char *user_name = getenv("USER");
+	sprintf(build_dir, "%s/%s", build_base_dir, user_name);
+	if (!qfile_exist(build_dir) && !qfile_mkdir(build_dir, S_IRWXU, true)) {
+		return false;
+	}
+	return true;
 }
 
 
@@ -69,8 +83,8 @@ main(int argc, char *argv[])
 		printf("usage: %s <script.c>\n", argv[0]);
 		return EXIT_SUCCESS;
 	}
-	if (!qfile_exist(build_dir) && !qfile_mkdir(build_dir, S_IRWXU, true)) {
-		fprintf(stderr, "could not create temporary build directory %s\n", build_dir);
+	if (!create_build_dir(build_base_dir, build_dir)) {
+		fprintf(stderr, "failed to create temporary build directory %s\n", build_dir);
 		return EXIT_FAILURE;
 	}
 	script_ptr = qfile_load(argv[1], &script_size);
