@@ -30,6 +30,9 @@ find_ccode_start(char *script_ptr, size_t script_size)
 	/// Skip shebang line if exists
 	if (script_ptr[0] == '#' && script_ptr[1] == '!') {
 		ccode_start = strchr(script_ptr, '\n');
+		if (!ccode_start || (ccode_start - script_ptr) + 1 == script_size) {
+			return NULL;
+		}
 		ccode_start++;
 	}
 	return ccode_start;
@@ -75,7 +78,7 @@ write_ccode_compile_and_run(
 {
 	char comp_cmd[CMD_MAX];
 	qfile_save(ccode_path, ccode_start, ccode_size, false);
-	sprintf(comp_cmd, "gcc %s %s -o %s", comp_warnings, ccode_path, exe_path);
+	sprintf(comp_cmd, "cc %s %s -o %s", comp_warnings, ccode_path, exe_path);
 	system(comp_cmd);
 	system(exe_path);
 }
@@ -94,6 +97,10 @@ main(int argc, char *argv[])
 	}
 	script_ptr = qfile_load(argv[1], &script_size);
 	ccode_start = find_ccode_start(script_ptr, script_size);
+	if (!ccode_start) {
+		fprintf(stderr, "no C code found in script\n");
+		return EXIT_FAILURE;
+	}
 	get_paths(argv[1], build_dir, ccode_path, exe_path);
 	write_ccode_compile_and_run(
 		ccode_start,
