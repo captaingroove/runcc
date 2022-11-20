@@ -5,14 +5,13 @@
 #include <qlibc/qlibc.h>
 #include <qlibc/utilities/qfile.h>
 
-#define FILE_NAME_MAX    256
-#define BUILD_PATH_MAX    64
-#define CMD_MAX         1024
+#define FILE_NAME_MAX (256)
+#define BUILD_PATH_MAX (64)
+#define OUT_PATH_MAX (FILE_NAME_MAX + BUILD_PATH_MAX)
+#define CMD_MAX (1024)
 
-static char  ccode_path[FILE_NAME_MAX + BUILD_PATH_MAX];
-static char    exe_path[FILE_NAME_MAX + BUILD_PATH_MAX];
-static char    comp_cmd[CMD_MAX];
-static char     run_cmd[CMD_MAX];
+static char ccode_path[OUT_PATH_MAX];
+static char exe_path[OUT_PATH_MAX];
 size_t script_size = 0;
 char *script_ptr = NULL, *ccode_start = NULL;
 
@@ -48,6 +47,8 @@ write_ccode_compile_and_run(
 	char *ccode_path,
 	char *exe_path)
 {
+	char comp_cmd[CMD_MAX];
+	char run_cmd[CMD_MAX];
 	qfile_save(ccode_path, ccode_start, ccode_size, false);
 	sprintf(comp_cmd, "gcc %s -o %s", ccode_path, exe_path);
 	system(comp_cmd);
