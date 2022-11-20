@@ -1,1 +1,1 @@
-#!/home/jorg/cc/runcc/build/runcc
+#!/usr/bin/env runcc

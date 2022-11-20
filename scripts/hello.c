@@ -1,4 +1,4 @@
-#!/home/jorg/cc/runcc/build/runcc
+#!/usr/bin/env runcc
 #include <stdio.h>
 
 main() { printf("hello, world\n"); }

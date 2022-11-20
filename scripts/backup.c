@@ -1,16 +1,24 @@
-#!/home/jorg/cc/runcc/build/runcc
+#!/usr/bin/env runcc
 #include <stdio.h>
 #include <stdlib.h>
 
-int
+void
 main(int argc, char *argv[])
 {
-	char subdir[128] = "";
-	if (argc == 2)
-		sprintf(subdir, "%s/", argv[1]);
+	if (argc == 1) {
+		printf("usage: %s targetdir [subdir]\n", argv[0]); return;
+	}
+	char *targetdir = argv[1];
+	char *subdir = "";
+	if (argc == 3) {
+		subdir = argv[2];
+	}
+	char *homedir = getenv("HOME");
 
 	char cmd[512];
-	sprintf(cmd, "sudo rsync -av --delete "
-		"/home/jorg/%s /media/jorg/Elements/asymptotic/%s", subdir, subdir);
-	system(cmd);
+	sprintf(cmd,
+		"sudo rsync -av --delete %s/%s %s/%s",
+		homedir, subdir, targetdir, subdir);
+	printf("%s\n", cmd);
+	// system(cmd);
 }

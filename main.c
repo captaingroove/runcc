@@ -20,6 +20,7 @@ size_t script_size = 0;
 char *script_ptr = NULL, *ccode_start = NULL;
 /// FIXME need to find a different build_dir if we want to cash the executables
 char *build_base_dir = "/tmp/runcc";
+/// Relax compiler warnings for scripts
 char *comp_warnings = "-Wno-implicit-int";
 
 
@@ -63,6 +64,7 @@ get_paths(const char *script_path, const char *build_dir, char *ccode_path, char
 		fprintf(stderr, "script file name has no extension like '.c'\n");
 		return false;
 	}
+	/// Eliminate .c extension for the executable file name
 	exe_path[strlen(exe_path) - strlen(dotpos)] = '\0';
 	return true;
 }
@@ -70,6 +72,7 @@ get_paths(const char *script_path, const char *build_dir, char *ccode_path, char
 
 void
 write_ccode_compile_and_run(
+	int argc, char *argv[],
 	char *ccode_start,
 	size_t ccode_size,
 	char *ccode_path,
@@ -77,10 +80,18 @@ write_ccode_compile_and_run(
 	char *comp_warnings)
 {
 	char comp_cmd[CMD_MAX];
+	char run_cmd[CMD_MAX];
 	qfile_save(ccode_path, ccode_start, ccode_size, false);
 	sprintf(comp_cmd, "cc %s %s -o %s", comp_warnings, ccode_path, exe_path);
+	printf("%s\n", comp_cmd);
 	system(comp_cmd);
-	system(exe_path);
+	sprintf(run_cmd, "%s", exe_path);
+	int run_cmd_pos = strlen(run_cmd);
+	for (int ac = 2; ac < argc; ac++) {
+		sprintf(&run_cmd[run_cmd_pos], " %s", argv[ac]);
+	}
+	printf("%s\n", run_cmd);
+	system(run_cmd);
 }
 
 
@@ -88,7 +99,7 @@ int
 main(int argc, char *argv[])
 {
 	if (argc == 1) {
-		printf("usage: %s <script.c>\n", argv[0]);
+		printf("usage: %s script.c\n", argv[0]);
 		return EXIT_SUCCESS;
 	}
 	if (!create_build_dir(build_base_dir, build_dir)) {
@@ -103,6 +114,7 @@ main(int argc, char *argv[])
 	}
 	get_paths(argv[1], build_dir, ccode_path, exe_path);
 	write_ccode_compile_and_run(
+		argc, argv,
 		ccode_start,
 		script_size - (ccode_start - script_ptr),
 		ccode_path,
