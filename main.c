@@ -24,6 +24,7 @@ static char exe_path[OUT_PATH_MAX] = {0};
 static char include_dirs[OUT_PATH_MAX] = {0};
 static char include_headers[OUT_PATH_MAX] = {0};
 static char linker_dirs[OUT_PATH_MAX] = {0};
+static char linker_path[OUT_PATH_MAX] = {0};
 static char linker_libs[OUT_PATH_MAX] = {0};
 size_t script_size = 0;
 char *script_ptr = NULL, *ccode_start = NULL;
@@ -130,7 +131,7 @@ write_ccode_compile_and_run(
 		exe_path);
 	printf("%s\n", comp_cmd);
 	system(comp_cmd);
-	sprintf(run_cmd, "%s", exe_path);
+	sprintf(run_cmd, "LD_LIBRARY_PATH=%s %s", linker_path, exe_path);
 	int run_cmd_pos = strlen(run_cmd);
 	for (int ac = 2; ac < argc; ac++) {
 		sprintf(&run_cmd[run_cmd_pos], " %s", argv[ac]);
@@ -160,6 +161,7 @@ main(int argc, char *argv[])
 	get_paths(ccode_path, exe_path, argv[1], build_dir);
 	get_params_from_env(include_dirs, ENV_INCDIRS, " -I");
 	get_params_from_env(linker_dirs, ENV_LIBDIRS, " -L");
+	get_params_from_env(linker_path, ENV_LIBDIRS, ":");
 	get_params_from_env(linker_libs, ENV_LIBS, " -l");
 	// get_params_from_env(linker_dirs, ENV_INCS, " -L");
 	write_ccode_compile_and_run(
