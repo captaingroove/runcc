@@ -90,18 +90,20 @@ get_paths(char *ccode_path, char *exe_path, const char *script_path, const char 
 bool
 get_params_from_env(char *params, const char *envvar, const char *param_prefix)
 {
-	char *incdirs = getenv(envvar);
-	if (!incdirs) return false; 
-	int incdirs_len = strlen(incdirs);
-	char *incdirs_end = incdirs + incdirs_len;
-	char *space = incdirs;
+	char *envval = getenv(envvar);
+	if (!envval) return false;
+	int envval_len = strlen(envval);
+	char *incdirs_end = envval + envval_len;
+	char *space = envval;
 	/// FIXME handle escaped spaces
-	while ((space = strchr(incdirs, ' '))) {
-		snprintf(params, space - incdirs, "%s%s", param_prefix, incdirs);
-		incdirs += (space - incdirs) + 1;
+	while ((space = strchr(envval, ' '))) {
+		int envval_len = space - envval + 1;
+		snprintf(params, envval_len + strlen(param_prefix), "%s%s", param_prefix, envval);
+		params += envval_len + strlen(param_prefix) - 1;
+		envval += envval_len;
 	}
-	int param_len = incdirs_end - incdirs + strlen(param_prefix) + 1;
-	snprintf(params, param_len, "%s%s", param_prefix, incdirs);
+	int param_len = incdirs_end - envval + 1 + strlen(param_prefix);
+	snprintf(params, param_len, "%s%s", param_prefix, envval);
 	return true;
 }
 
@@ -119,7 +121,13 @@ write_ccode_compile_and_run(
 	char comp_cmd[CMD_MAX];
 	char run_cmd[CMD_MAX];
 	qfile_save(ccode_path, ccode_start, ccode_size, false);
-	sprintf(comp_cmd, "cc %s %s %s %s -o %s", comp_warnings, include_dirs, linker_dirs, ccode_path, exe_path);
+	sprintf(comp_cmd, "cc %s %s %s %s %s -o %s",
+		comp_warnings,
+		include_dirs,
+		linker_dirs,
+		ccode_path,
+		linker_libs,
+		exe_path);
 	printf("%s\n", comp_cmd);
 	system(comp_cmd);
 	sprintf(run_cmd, "%s", exe_path);
@@ -152,6 +160,8 @@ main(int argc, char *argv[])
 	get_paths(ccode_path, exe_path, argv[1], build_dir);
 	get_params_from_env(include_dirs, ENV_INCDIRS, " -I");
 	get_params_from_env(linker_dirs, ENV_LIBDIRS, " -L");
+	get_params_from_env(linker_libs, ENV_LIBS, " -l");
+	// get_params_from_env(linker_dirs, ENV_INCS, " -L");
 	write_ccode_compile_and_run(
 		argc, argv,
 		ccode_start,
