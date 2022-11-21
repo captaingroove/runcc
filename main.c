@@ -12,6 +12,7 @@
 #define BUILD_PATH_MAX (64)
 #define OUT_PATH_MAX (FILE_NAME_MAX + BUILD_PATH_MAX)
 #define CMD_MAX (1024)
+#define PREPROC_INCDIRS ("#incdirs")
 
 static char build_dir[OUT_PATH_MAX];
 static char ccode_path[OUT_PATH_MAX];
@@ -35,6 +36,14 @@ find_ccode_start(char *script_ptr, size_t script_size)
 			return NULL;
 		}
 		ccode_start++;
+	}
+	while (*ccode_start == '#') {
+		char *space = strchr(ccode_start, ' ');
+		if (space && strncmp(ccode_start, PREPROC_INCDIRS, strlen(PREPROC_INCDIRS)) == 0) {
+			printf("found %s\n", PREPROC_INCDIRS);
+			ccode_start = strchr(ccode_start, '\n');
+			ccode_start++;
+		}
 	}
 	return ccode_start;
 }
