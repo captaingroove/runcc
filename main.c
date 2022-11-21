@@ -32,9 +32,6 @@ find_ccode_start(char *script_ptr, size_t script_size)
 	/// Skip shebang line if exists
 	if (script_ptr[0] == '#' && script_ptr[1] == '!') {
 		ccode_start = strchr(script_ptr, '\n');
-		if (!ccode_start || (ccode_start - script_ptr) + 1 == script_size) {
-			return NULL;
-		}
 		ccode_start++;
 	}
 	while (*ccode_start == '#') {
@@ -44,6 +41,9 @@ find_ccode_start(char *script_ptr, size_t script_size)
 			ccode_start = strchr(ccode_start, '\n');
 			ccode_start++;
 		}
+	}
+	if (!ccode_start || (ccode_start - script_ptr) == script_size) {
+		return NULL;
 	}
 	return ccode_start;
 }
