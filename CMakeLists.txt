@@ -9,7 +9,7 @@ add_executable(runcc
 )
 
 target_link_libraries(runcc
-	qlibc
+	libqlibc.a
 	pthread
 )
 
