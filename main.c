@@ -41,7 +41,7 @@ find_ccode_start(char *script_ptr, size_t script_size)
 
 
 bool
-create_build_dir(const char *build_base_dir, char *build_dir)
+create_build_dir(char *build_dir, const char *build_base_dir)
 {
 	/// FIXME use a unique temporary file name instead of user name if user name is not available
 	char *user_name = getenv("USER");
@@ -54,7 +54,7 @@ create_build_dir(const char *build_base_dir, char *build_dir)
 
 
 bool
-get_paths(const char *script_path, const char *build_dir, char *ccode_path, char *exe_path)
+get_paths(char *ccode_path, char *exe_path, const char *script_path, const char *build_dir)
 {
 	char *script_name = qfile_get_name(script_path);
 	sprintf(ccode_path, "%s/%s", build_dir, script_name);
@@ -102,7 +102,7 @@ main(int argc, char *argv[])
 		printf("usage: %s script.c\n", argv[0]);
 		return EXIT_SUCCESS;
 	}
-	if (!create_build_dir(build_base_dir, build_dir)) {
+	if (!create_build_dir(build_dir, build_base_dir)) {
 		fprintf(stderr, "failed to create temporary build directory %s\n", build_dir);
 		return EXIT_FAILURE;
 	}
@@ -112,7 +112,7 @@ main(int argc, char *argv[])
 		fprintf(stderr, "no C code found in script\n");
 		return EXIT_FAILURE;
 	}
-	get_paths(argv[1], build_dir, ccode_path, exe_path);
+	get_paths(ccode_path, exe_path, argv[1], build_dir);
 	write_ccode_compile_and_run(
 		argc, argv,
 		ccode_start,
