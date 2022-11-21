@@ -13,10 +13,18 @@
 #define OUT_PATH_MAX (FILE_NAME_MAX + BUILD_PATH_MAX)
 #define CMD_MAX (1024)
 #define PREPROC_INCDIRS ("#incdirs")
+#define ENV_INCDIRS ("RUNCC_INCDIRS")
+#define ENV_INCS    ("RUNCC_INCS")
+#define ENV_LIBDIRS ("RUNCC_LIBDIRS")
+#define ENV_LIBS    ("RUNCC_LIBS")
 
-static char build_dir[OUT_PATH_MAX];
-static char ccode_path[OUT_PATH_MAX];
-static char exe_path[OUT_PATH_MAX];
+static char build_dir[OUT_PATH_MAX] = {0};
+static char ccode_path[OUT_PATH_MAX] = {0};
+static char exe_path[OUT_PATH_MAX] = {0};
+static char include_dirs[OUT_PATH_MAX] = {0};
+static char include_headers[OUT_PATH_MAX] = {0};
+static char linker_dirs[OUT_PATH_MAX] = {0};
+static char linker_libs[OUT_PATH_MAX] = {0};
 size_t script_size = 0;
 char *script_ptr = NULL, *ccode_start = NULL;
 /// FIXME need to find a different build_dir if we want to cash the executables
@@ -79,6 +87,25 @@ get_paths(char *ccode_path, char *exe_path, const char *script_path, const char 
 }
 
 
+bool
+get_params_from_env(char *params, const char *envvar, const char *param_prefix)
+{
+	char *incdirs = getenv(envvar);
+	if (!incdirs) return false; 
+	int incdirs_len = strlen(incdirs);
+	char *incdirs_end = incdirs + incdirs_len;
+	char *space = incdirs;
+	/// FIXME handle escaped spaces
+	while ((space = strchr(incdirs, ' '))) {
+		snprintf(params, space - incdirs, "%s%s", param_prefix, incdirs);
+		incdirs += (space - incdirs) + 1;
+	}
+	int param_len = incdirs_end - incdirs + strlen(param_prefix) + 1;
+	snprintf(params, param_len, "%s%s", param_prefix, incdirs);
+	return true;
+}
+
+
 void
 write_ccode_compile_and_run(
 	int argc, char *argv[],
@@ -86,12 +113,13 @@ write_ccode_compile_and_run(
 	size_t ccode_size,
 	char *ccode_path,
 	char *exe_path,
-	char *comp_warnings)
+	char *comp_warnings,
+	char *include_dirs)
 {
 	char comp_cmd[CMD_MAX];
 	char run_cmd[CMD_MAX];
 	qfile_save(ccode_path, ccode_start, ccode_size, false);
-	sprintf(comp_cmd, "cc %s %s -o %s", comp_warnings, ccode_path, exe_path);
+	sprintf(comp_cmd, "cc %s %s %s %s -o %s", comp_warnings, include_dirs, linker_dirs, ccode_path, exe_path);
 	printf("%s\n", comp_cmd);
 	system(comp_cmd);
 	sprintf(run_cmd, "%s", exe_path);
@@ -122,12 +150,15 @@ main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 	get_paths(ccode_path, exe_path, argv[1], build_dir);
+	get_params_from_env(include_dirs, ENV_INCDIRS, " -I");
+	get_params_from_env(linker_dirs, ENV_LIBDIRS, " -L");
 	write_ccode_compile_and_run(
 		argc, argv,
 		ccode_start,
 		script_size - (ccode_start - script_ptr),
 		ccode_path,
 		exe_path,
-		comp_warnings);
+		comp_warnings,
+		include_dirs);
 	return EXIT_SUCCESS;
 }
