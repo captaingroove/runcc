@@ -32,6 +32,7 @@ static char comp_exec[FILE_NAME_MAX]      = {0};
 size_t script_size = 0;
 char *script_ptr = NULL, *ccode_start = NULL;
 char *build_base_dir = "/tmp/runcc";
+bool verbose = false;
 
 
 bool get_params_from_list(char *params, const char *liststr, const char *param_prefix);
@@ -56,7 +57,7 @@ find_ccode_start(char *script_ptr, size_t script_size)
 			char libstr[CMD_MAX] = {0};
 			strncpy(libstr, libstr_ptr, libstr_len);
 			get_params_from_list(linker_libs, libstr, " -l");
-			printf("link: %s\n", linker_libs);
+			if (verbose) printf("link: %s\n", linker_libs);
 			ccode_start++;
 		}
 	}
@@ -127,7 +128,7 @@ get_params_from_env(char *params, const char *envvar, const char *param_prefix)
 
 void
 write_ccode_compile_and_run(
-	int argc, char *argv[],
+	int arg_start, int argc, char *argv[],
 	char *ccode_start,
 	size_t ccode_size,
 	char *ccode_path,
@@ -153,14 +154,14 @@ write_ccode_compile_and_run(
 		linker_dirs,
 		ccode_path,
 		linker_libs);
-	printf("compile: %s\n", comp_cmd);
+	if (verbose) printf("compile: %s\n", comp_cmd);
 	system(comp_cmd);
 	sprintf(run_cmd, "LD_LIBRARY_PATH=%s %s", linker_path, exe_path);
 	int run_cmd_pos = strlen(run_cmd);
-	for (int ac = 2; ac < argc; ac++) {
+	for (int ac = arg_start; ac < argc; ac++) {
 		sprintf(&run_cmd[run_cmd_pos], " %s", argv[ac]);
 	}
-	printf("execute: %s\n", run_cmd);
+	if (verbose) printf("execute: %s\n", run_cmd);
 	system(run_cmd);
 }
 
@@ -169,8 +170,13 @@ int
 main(int argc, char *argv[])
 {
 	if (argc == 1) {
-		printf("usage: %s script.c\n", argv[0]);
+		printf("usage: %s [-v] script.c\n", argv[0]);
 		return EXIT_SUCCESS;
+	}
+	int arg_start = 1;
+	if (argc >= 3 && strncmp(argv[arg_start], "-v", strlen("-v")) == 0) {
+		arg_start++;
+		verbose = true;
 	}
 	if (getenv(ENV_BUILDDIR)) {
 		build_base_dir = getenv(ENV_BUILDDIR);
@@ -179,19 +185,19 @@ main(int argc, char *argv[])
 		fprintf(stderr, "failed to create temporary build directory %s\n", build_dir);
 		return EXIT_FAILURE;
 	}
-	script_ptr = qfile_load(argv[1], &script_size);
+	script_ptr = qfile_load(argv[arg_start], &script_size);
 	ccode_start = find_ccode_start(script_ptr, script_size);
 	if (!ccode_start) {
 		fprintf(stderr, "no C code found in script\n");
 		return EXIT_FAILURE;
 	}
-	get_paths(ccode_path, exe_path, argv[1], build_dir);
+	get_paths(ccode_path, exe_path, argv[arg_start], build_dir);
 	get_params_from_env(include_dirs, ENV_INCDIRS, " -I");
 	get_params_from_env(linker_dirs, ENV_LIBDIRS, " -L");
 	get_params_from_env(linker_path, ENV_LIBDIRS, ":");
-	// get_params_from_env(linker_libs, ENV_LIBS, " -l");
+	arg_start++;
 	write_ccode_compile_and_run(
-		argc, argv,
+		arg_start, argc, argv,
 		ccode_start,
 		script_size - (ccode_start - script_ptr),
 		ccode_path,
