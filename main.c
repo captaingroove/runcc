@@ -6,8 +6,8 @@
 #include <qlibc/qlibc.h>
 #include <qlibc/utilities/qfile.h>
 
-/// We can make safe assumptions on the following string lengths,
-/// as this is either not no user input or these are OS limits
+/// We can safely make assumptions on the following string lengths,
+/// as this is either no user input or these are OS limits
 #define FILE_NAME_MAX (256)
 #define BUILD_PATH_MAX (64)
 #define OUT_PATH_MAX (FILE_NAME_MAX + BUILD_PATH_MAX)
@@ -15,24 +15,24 @@
 #define PREPROC_INCDIRS ("#incdirs")
 #define PREPROC_LIBS    ("#libs")
 #define ENV_INCDIRS     ("RUNCC_INCDIRS")
-#define ENV_INCS        ("RUNCC_INCS")
 #define ENV_LIBDIRS     ("RUNCC_LIBDIRS")
-#define ENV_LIBS        ("RUNCC_LIBS")
+#define ENV_BUILDDIR    ("RUNCC_BUILDDIR")
+#define ENV_CFLAGS      ("RUNCC_CFLAGS")
+#define ENV_CC          ("RUNCC_CC")
 
-static char build_dir[OUT_PATH_MAX] = {0};
-static char ccode_path[OUT_PATH_MAX] = {0};
-static char exe_path[OUT_PATH_MAX] = {0};
-static char include_dirs[OUT_PATH_MAX] = {0};
+static char build_dir[OUT_PATH_MAX]       = {0};
+static char ccode_path[OUT_PATH_MAX]      = {0};
+static char exe_path[OUT_PATH_MAX]        = {0};
+static char include_dirs[OUT_PATH_MAX]    = {0};
 static char include_headers[OUT_PATH_MAX] = {0};
-static char linker_dirs[OUT_PATH_MAX] = {0};
-static char linker_path[OUT_PATH_MAX] = {0};
-static char linker_libs[OUT_PATH_MAX] = {0};
+static char linker_dirs[OUT_PATH_MAX]     = {0};
+static char linker_path[OUT_PATH_MAX]     = {0};
+static char linker_libs[OUT_PATH_MAX]     = {0};
+static char comp_cflags[CMD_MAX]          = {0};
+static char comp_exec[FILE_NAME_MAX]      = {0};
 size_t script_size = 0;
 char *script_ptr = NULL, *ccode_start = NULL;
-/// FIXME need to find a different build_dir if we want to cash the executables
 char *build_base_dir = "/tmp/runcc";
-/// Relax compiler warnings for scripts
-char *comp_warnings = "-Wno-implicit-int";
 
 
 bool get_params_from_list(char *params, const char *liststr, const char *param_prefix);
@@ -59,7 +59,7 @@ find_ccode_start(char *script_ptr, size_t script_size)
 			char *libstr_ptr = ccode_start + strlen(PREPROC_LIBS) + 1;
 			ccode_start = strchr(ccode_start, '\n');
 			int libstr_len = ccode_start - libstr_ptr;
-			char libstr[256] = {0};
+			char libstr[CMD_MAX] = {0};
 			strncpy(libstr, libstr_ptr, libstr_len);
 			get_params_from_list(linker_libs, libstr, " -l");
 			ccode_start++;
@@ -137,19 +137,27 @@ write_ccode_compile_and_run(
 	size_t ccode_size,
 	char *ccode_path,
 	char *exe_path,
-	char *comp_warnings,
 	char *include_dirs)
 {
 	char comp_cmd[CMD_MAX];
 	char run_cmd[CMD_MAX];
+	char *cflags = "";
+	if (getenv(ENV_CFLAGS)) {
+		cflags = getenv(ENV_CFLAGS);
+	}
+	char *comp_exec = "cc";
+	if (getenv(ENV_CC)) {
+		comp_exec = getenv(ENV_CC);
+	}
 	qfile_save(ccode_path, ccode_start, ccode_size, false);
-	sprintf(comp_cmd, "cc %s %s %s %s %s -o %s",
-		comp_warnings,
+	sprintf(comp_cmd, "%s -o %s %s %s %s %s %s",
+		comp_exec,
+		exe_path,
+		cflags,
 		include_dirs,
 		linker_dirs,
 		ccode_path,
-		linker_libs,
-		exe_path);
+		linker_libs);
 	printf("%s\n", comp_cmd);
 	system(comp_cmd);
 	sprintf(run_cmd, "LD_LIBRARY_PATH=%s %s", linker_path, exe_path);
@@ -169,6 +177,9 @@ main(int argc, char *argv[])
 		printf("usage: %s script.c\n", argv[0]);
 		return EXIT_SUCCESS;
 	}
+	if (getenv(ENV_BUILDDIR)) {
+		build_base_dir = getenv(ENV_BUILDDIR);
+	}
 	if (!create_build_dir(build_dir, build_base_dir)) {
 		fprintf(stderr, "failed to create temporary build directory %s\n", build_dir);
 		return EXIT_FAILURE;
@@ -183,15 +194,13 @@ main(int argc, char *argv[])
 	get_params_from_env(include_dirs, ENV_INCDIRS, " -I");
 	get_params_from_env(linker_dirs, ENV_LIBDIRS, " -L");
 	get_params_from_env(linker_path, ENV_LIBDIRS, ":");
-	get_params_from_env(linker_libs, ENV_LIBS, " -l");
-	// get_params_from_env(linker_dirs, ENV_INCS, " -L");
+	// get_params_from_env(linker_libs, ENV_LIBS, " -l");
 	write_ccode_compile_and_run(
 		argc, argv,
 		ccode_start,
 		script_size - (ccode_start - script_ptr),
 		ccode_path,
 		exe_path,
-		comp_warnings,
 		include_dirs);
 	return EXIT_SUCCESS;
 }
