@@ -13,10 +13,11 @@
 #define OUT_PATH_MAX (FILE_NAME_MAX + BUILD_PATH_MAX)
 #define CMD_MAX (1024)
 #define PREPROC_INCDIRS ("#incdirs")
-#define ENV_INCDIRS ("RUNCC_INCDIRS")
-#define ENV_INCS    ("RUNCC_INCS")
-#define ENV_LIBDIRS ("RUNCC_LIBDIRS")
-#define ENV_LIBS    ("RUNCC_LIBS")
+#define PREPROC_LIBS    ("#libs")
+#define ENV_INCDIRS     ("RUNCC_INCDIRS")
+#define ENV_INCS        ("RUNCC_INCS")
+#define ENV_LIBDIRS     ("RUNCC_LIBDIRS")
+#define ENV_LIBS        ("RUNCC_LIBS")
 
 static char build_dir[OUT_PATH_MAX] = {0};
 static char ccode_path[OUT_PATH_MAX] = {0};
@@ -34,6 +35,9 @@ char *build_base_dir = "/tmp/runcc";
 char *comp_warnings = "-Wno-implicit-int";
 
 
+bool get_params_from_list(char *params, const char *liststr, const char *param_prefix);
+
+
 char *
 find_ccode_start(char *script_ptr, size_t script_size)
 {
@@ -48,6 +52,16 @@ find_ccode_start(char *script_ptr, size_t script_size)
 		if (space && strncmp(ccode_start, PREPROC_INCDIRS, strlen(PREPROC_INCDIRS)) == 0) {
 			printf("found %s\n", PREPROC_INCDIRS);
 			ccode_start = strchr(ccode_start, '\n');
+			ccode_start++;
+		}
+		if (space && strncmp(ccode_start, PREPROC_LIBS, strlen(PREPROC_LIBS)) == 0) {
+			printf("found %s\n", PREPROC_LIBS);
+			char *libstr_ptr = ccode_start + strlen(PREPROC_LIBS) + 1;
+			ccode_start = strchr(ccode_start, '\n');
+			int libstr_len = ccode_start - libstr_ptr;
+			char libstr[256] = {0};
+			strncpy(libstr, libstr_ptr, libstr_len);
+			get_params_from_list(linker_libs, libstr, " -l");
 			ccode_start++;
 		}
 	}
@@ -89,23 +103,30 @@ get_paths(char *ccode_path, char *exe_path, const char *script_path, const char 
 
 
 bool
+get_params_from_list(char *params, const char *liststr, const char *param_prefix)
+{
+	int liststr_len = strlen(liststr);
+	const char *liststr_end = liststr + liststr_len;
+	char *space = NULL;
+	/// FIXME handle escaped spaces
+	while ((space = strchr(liststr, ' '))) {
+		liststr_len = space - liststr + 1;
+		snprintf(params, liststr_len + strlen(param_prefix), "%s%s", param_prefix, liststr);
+		params += liststr_len + strlen(param_prefix) - 1;
+		liststr += liststr_len;
+	}
+	int param_len = liststr_end - liststr + 1 + strlen(param_prefix);
+	snprintf(params, param_len, "%s%s", param_prefix, liststr);
+	return true;
+}
+
+
+bool
 get_params_from_env(char *params, const char *envvar, const char *param_prefix)
 {
 	char *envval = getenv(envvar);
 	if (!envval) return false;
-	int envval_len = strlen(envval);
-	char *incdirs_end = envval + envval_len;
-	char *space = envval;
-	/// FIXME handle escaped spaces
-	while ((space = strchr(envval, ' '))) {
-		int envval_len = space - envval + 1;
-		snprintf(params, envval_len + strlen(param_prefix), "%s%s", param_prefix, envval);
-		params += envval_len + strlen(param_prefix) - 1;
-		envval += envval_len;
-	}
-	int param_len = incdirs_end - envval + 1 + strlen(param_prefix);
-	snprintf(params, param_len, "%s%s", param_prefix, envval);
-	return true;
+	return get_params_from_list(params, envval, param_prefix);
 }
 
 

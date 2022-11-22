@@ -1,5 +1,5 @@
 #!/usr/bin/env runcc
-// #libs qlibc
+#libs qlibc pthread
 
 #include <stdio.h>
 #include <qlibc/qlibc.h>
