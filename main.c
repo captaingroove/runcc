@@ -55,6 +55,7 @@ find_ccode_start(char *script_ptr, size_t script_size)
 			ccode_start = strchr(ccode_start, '\n');
 			int libstr_len = ccode_start - libstr_ptr;
 			char libstr[CMD_MAX] = {0};
+			/// FIXME make sure the libstr list is a null terminated string
 			strncpy(libstr, libstr_ptr, libstr_len);
 			get_params_from_list(linker_libs, libstr, " -l");
 			if (verbose) printf("link: %s\n", linker_libs);
@@ -73,6 +74,7 @@ create_build_dir(char *build_dir, const char *build_base_dir)
 {
 	/// FIXME use a unique temporary file name instead of user name if user name is not available
 	char *user_name = getenv("USER");
+	/// FIXME generally use snprintf() instead of sprintf()
 	sprintf(build_dir, "%s/%s", build_base_dir, user_name);
 	if (!qfile_exist(build_dir) && !qfile_mkdir(build_dir, S_IRWXU, true)) {
 		return false;
@@ -93,6 +95,7 @@ get_paths(char *ccode_path, char *exe_path, const char *script_path, const char 
 		return false;
 	}
 	/// Eliminate .c extension for the executable file name
+	/// FIXME better add .c extension, so we can use files with no extension for C scripts
 	exe_path[strlen(exe_path) - strlen(dotpos)] = '\0';
 	return true;
 }
