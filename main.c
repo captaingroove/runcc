@@ -12,7 +12,6 @@
 #define BUILD_PATH_MAX (64)
 #define OUT_PATH_MAX (FILE_NAME_MAX + BUILD_PATH_MAX)
 #define CMD_MAX (1024)
-#define PREPROC_INCDIRS ("#incdirs")
 #define PREPROC_LIBS    ("#libs")
 #define ENV_INCDIRS     ("RUNCC_INCDIRS")
 #define ENV_LIBDIRS     ("RUNCC_LIBDIRS")
@@ -43,25 +42,21 @@ find_ccode_start(char *script_ptr, size_t script_size)
 {
 	char *ccode_start = script_ptr;
 	/// Skip shebang line if exists
-	if (script_ptr[0] == '#' && script_ptr[1] == '!') {
+	if (script_size > 2 && script_ptr[0] == '#' && script_ptr[1] == '!') {
 		ccode_start = strchr(script_ptr, '\n');
 		ccode_start++;
 	}
-	while (*ccode_start == '#') {
+	while ((ccode_start - script_ptr) + strlen(PREPROC_LIBS) < script_size
+			&& strncmp(ccode_start, PREPROC_LIBS, strlen(PREPROC_LIBS)) == 0) {
 		char *space = strchr(ccode_start, ' ');
-		if (space && strncmp(ccode_start, PREPROC_INCDIRS, strlen(PREPROC_INCDIRS)) == 0) {
-			printf("found %s\n", PREPROC_INCDIRS);
-			ccode_start = strchr(ccode_start, '\n');
-			ccode_start++;
-		}
 		if (space && strncmp(ccode_start, PREPROC_LIBS, strlen(PREPROC_LIBS)) == 0) {
-			printf("found %s\n", PREPROC_LIBS);
 			char *libstr_ptr = ccode_start + strlen(PREPROC_LIBS) + 1;
 			ccode_start = strchr(ccode_start, '\n');
 			int libstr_len = ccode_start - libstr_ptr;
 			char libstr[CMD_MAX] = {0};
 			strncpy(libstr, libstr_ptr, libstr_len);
 			get_params_from_list(linker_libs, libstr, " -l");
+			printf("link: %s\n", linker_libs);
 			ccode_start++;
 		}
 	}
@@ -158,14 +153,14 @@ write_ccode_compile_and_run(
 		linker_dirs,
 		ccode_path,
 		linker_libs);
-	printf("%s\n", comp_cmd);
+	printf("compile: %s\n", comp_cmd);
 	system(comp_cmd);
 	sprintf(run_cmd, "LD_LIBRARY_PATH=%s %s", linker_path, exe_path);
 	int run_cmd_pos = strlen(run_cmd);
 	for (int ac = 2; ac < argc; ac++) {
 		sprintf(&run_cmd[run_cmd_pos], " %s", argv[ac]);
 	}
-	printf("%s\n", run_cmd);
+	printf("execute: %s\n", run_cmd);
 	system(run_cmd);
 }
 
