@@ -1,8 +1,6 @@
 #!/usr/bin/env runcc
 #libs qlibc pthread
 #include <stdio.h>
-#include <string.h>
-#include <errno.h>
 #include <qlibc/qlibc.h>
 #include <qlibc/utilities/qfile.h>
 
@@ -16,7 +14,7 @@ main(int argc, char *argv[])
 	qhashtbl_t *wordmap = qhashtbl(0, 0);
 	char *w; int wc = 0;
 	while ((w = qlist_popfirst(words, NULL))) {
-		if (strlen(w)) {
+		if (w[0]) {
 			qhashtbl_putint(wordmap, w, qhashtbl_getint(wordmap, w) + 1);
 			wc++;
 		}
